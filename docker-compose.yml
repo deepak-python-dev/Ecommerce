@@ -1,0 +1,44 @@
+version: '3'
+
+services:
+  db:
+    image: mysql:latest
+    environment:
+      MYSQL_ROOT_PASSWORD: root_password
+      MYSQL_DATABASE: ecommerce_backend
+      MYSQL_USER: ankush
+      MYSQL_PASSWORD: password
+    ports:
+      - "3306:3306"
+
+  mongodb:
+    image: mongo:latest
+    container_name: mongodb
+    restart: always
+    ports:
+      - "27017:27017"
+
+  apimigrations:
+    build: .
+    command: >
+      sh -c "python scripts/is_db_active.py && python manage.py makemigrations && python manage.py migrate && python scripts/setup_mongo_collections.py"
+    volumes:
+      - .:/code
+    env_file:
+      - .env
+    depends_on:
+      - db
+      - mongodb
+
+  web:
+    build: .
+    command: >
+      sh -c "python scripts/is_db_active.py && python manage.py runserver 0.0.0.0:8000"
+    volumes:
+      - .:/code
+    ports:
+      - "8000:8000"
+    depends_on:
+      - apimigrations
+    env_file:
+      - .env
